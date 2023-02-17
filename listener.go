@@ -1,38 +1,57 @@
 package main
 
 import (
-	"net/http"
+	"io"
+	"math/rand"
+	"os"
+	"time"
 	u "utils"
 
 	"fmt"
 	"strings"
 
-	"github.com/gobuffalo/buffalo"
-	"github.com/gobuffalo/buffalo/render"
-	"github.com/gobuffalo/envy"
+	"github.com/fatih/color"
+	"github.com/gin-gonic/gin"
 )
 
 var listeners []u.Listener // declare an empty list of Listeners
 
 func createListener(userInput string) {
-	usage := "[-] Usage: listener <host> <port> <base uri> <password>"
+
+	// nice colors :)
+	red := color.New(color.FgRed)
+	boldRed := red.Add(color.Bold)
+	green := color.New(color.FgGreen)
+	boldGreen := green.Add(color.Bold)
+	magenta := color.New(color.FgHiMagenta)
+
+	usage := "Usage: listener <host> <port> <base uri> <password>"
 	args := strings.Fields(userInput)
 
+	now := time.Now()
+
 	if len(args) < 5 {
-		fmt.Println("[-] Something in your arguments is wrong, fix it!")
+		boldRed.Print("[-] ")
+		fmt.Println("Something in your arguments is wrong, fix it!")
+
+		boldRed.Print("[-] ")
 		fmt.Println(usage)
 		return
 	}
 
+	name := generateRandomString(5)
 	host := args[1]
 	port := args[2]
 	baseURI := args[3]
 	password := args[4]
-	fmt.Printf("[+] Starting listener on %s:%s%s with password %s\n", host, port, baseURI, password)
+
+	boldGreen.Print("[+]")
+	magenta.Printf(" %d/%d/%d, %d:%d:%d", now.Day(), now.Month(), now.Year(), now.Hour(), now.Minute(), now.Second())
+	fmt.Printf(" - Listener started: [%s] http://%s:%s%s (%s)\n", name, host, port, baseURI, password)
 
 	// create a new listener
 	listener := u.Listener{
-		Name:     "listener1",
+		Name:     name,
 		Address:  host,
 		Port:     port,
 		Uri:      baseURI,
@@ -40,43 +59,60 @@ func createListener(userInput string) {
 	}
 
 	listeners = append(listeners, listener)
-
-	// TODO: using martini:
-	// 1. start thread -> goroutines
-	// 2. start_server()
-	// 3. opens handler on arguments from Listener Data Class
 }
 
 func startServer(host string, port string, baseURI string, password string) {
-	// Set the application environment to "production"
-	envy.Set("GO_ENV", "production")
+	// colors for prompt
+	red := color.New(color.FgRed)
+	boldRed := red.Add(color.Bold)
 
-	// Create a new Buffalo application
-	app := buffalo.New(buffalo.Options{
-		Addr:         fmt.Sprintf("%s:%s", host, port),
-		Prefix:       baseURI,
-		SessionName:  "buffalo-session",
-		SessionStore: nil,
-	})
+	gin.DisableConsoleColor() // Disable console color
 
-	// Define a handler function for the server
-	app.GET("/", func(c buffalo.Context) error {
-		c.Set("name", "Thomas")
+	// Logging to a file.
+	f, _ := os.Create("logs/debug.log")
+	gin.DefaultWriter = io.MultiWriter(f)
 
-		return c.Render(http.StatusOK, render.String("Hi <%= name %>"))
+	// Starting a webserver instance using GIN
+	router := gin.Default()
+	router.GET(baseURI+"/stage/:id", func(c *gin.Context) {
+		stageId := c.Param("id")
+		c.JSON(200, gin.H{
+			"message": "Malware to be downloaded: " + stageId + "!",
+		})
 	})
 
 	// Start the server in a goroutine
 	go func() {
 		// Start the server
-		fmt.Printf("[+] Starting server at http://%s%s\n", app.Addr, baseURI)
-		if err := app.Serve(); err != nil {
-			fmt.Printf("[-] Error starting server: %v\n", err)
+		// boldGreen.Print("[+]")
+		// fmt.Printf(" Starting server at http://%s"+":%s"+"%s\n", host, port, baseURI)
+		if err := router.Run(":" + port); err != nil {
+			boldRed.Print("[-]")
+			fmt.Printf(" Error starting server: %v\n", err)
 		}
+
 	}()
 
-	// Check if a password was provided
-	if password != "" {
-		fmt.Printf("[+] Password for server: %s\n", password)
+	// // Check if a password was provided
+	// if password != "" {
+	// 	boldGreen.Print("[+]")
+	// 	fmt.Printf(" Password for server: %s\n", password)
+	// }
+}
+
+func generateRandomString(length int) string {
+	// Seed the random number generator with the current time
+	rand.Seed(time.Now().UnixNano())
+
+	// Define the set of characters that can be used in the random string
+	letters := "abcdefghijklmnopqrstuvwxyz"
+
+	// Generate a random string of the specified length
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
 	}
+
+	// Convert the byte slice to a string and return it
+	return string(b)
 }

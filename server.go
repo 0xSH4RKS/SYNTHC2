@@ -8,6 +8,7 @@ import (
 	u "utils"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -83,12 +84,19 @@ func completer(d prompt.Document) []prompt.Suggest {
 }
 
 func runSYNTH() {
+
+	// colors for prompt
+	red := color.New(color.FgRed)
+	boldRed := red.Add(color.Bold)
+
 	for {
 		input := prompt.Input("[SYNTH] > ", completer)
 		if input == "exit" {
-			fmt.Println("[-] Exiting SYNTH C2")
+			boldRed.Print("[-]")
+			fmt.Println(" Exiting SYNTH C2")
 			return
 		}
+
 		if input == "help" {
 			commands := availableCommands()
 			// print out all available commands
@@ -105,8 +113,6 @@ func runSYNTH() {
 			listenersTable.SetHeader([]string{"Name", "Host", "Port", "Uri", "Password"})
 			for _, l := range listeners {
 				listenersTable.Append([]string{l.Name, l.Address, l.Port, l.Uri, l.Password})
-
-				// TODO: proceed with prompt after creating the goroutine
 				startServer(l.Address, l.Port, l.Uri, l.Password)
 			}
 			// DEBUG
@@ -142,7 +148,6 @@ func runSYNTH() {
 			}
 			table.Render()
 		}
-
 	}
 
 }
