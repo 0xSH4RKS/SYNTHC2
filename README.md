@@ -6,4 +6,4 @@
 </h1>
 
 ## Description
-C2 Project - Learning Golang &amp; C
+C2 Project - Learning Python &amp; C
