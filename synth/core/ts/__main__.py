@@ -9,8 +9,8 @@ optional arguments:
     --insecure          Start server without TLS
 """
 import asyncio
-from synth.core.teamserver.users import Users, UsernameAlreadyPresentError
-from synth.core.teamserver.contexts import Listeners, Sessions, Modules, Stagers
+from synth.core.ts.users import Users, UsernameAlreadyPresentError
+from synth.core.ts.contexts import Listeners, Sessions, Modules, Stagers
 
 class TeamServer:
     def __init__(self):
